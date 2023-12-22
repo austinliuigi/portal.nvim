@@ -34,7 +34,6 @@ local config = {
         convert_cmd = function()
           return {
             "pandoc",
-            portal.infile,
             "--from=markdown",
             "--to=pdf",
             "-o",

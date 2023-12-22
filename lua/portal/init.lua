@@ -70,90 +70,99 @@ function portal.open(pd)
     return
   end
 
-  -- initial conversion (synchronous to make sure output file exists before viewing)
-  vim.cmd("silent w! " .. infile)
-  local conversion = vim.system(parse_cmd(cfg.convert_cmd, pd), { text = true }):wait()
-  if conversion.code > 1 then
-    vim.notify(
-      string.format("portal: conversion failed, exited with code %s\n\n(stderr) %s", conversion.code, conversion.stderr),
-      vim.log.levels.ERROR
-    )
-    portal.close(pd)
-    return
-  end
+  -- initial conversion
+  vim.system(
+    parse_cmd(cfg.convert_cmd, pd),
+    { stdin = vim.api.nvim_buf_get_lines(0, 0, -1, false), text = true },
+    vim.schedule_wrap(function(conversion)
+      if conversion.code > 1 then
+        vim.notify(
+          string.format(
+            "portal: conversion failed, exited with code %s\n\n(stderr) %s",
+            conversion.code,
+            conversion.stderr
+          ),
+          vim.log.levels.ERROR
+        )
+        return
+      end
 
-  -- open viewer
-  local viewer = vim.system(parse_cmd(cfg.viewer.open_cmd, pd), { text = true, detach = true }, function(obj)
-    if obj.code ~= 0 then
       vim.notify(
-        string.format("portal: failed to open viewer, exited with code %s\n\n(stderr) %s", obj.code, obj.stderr),
-        vim.log.levels.ERROR
+        string.format("portal: portal from %s to %s successfully opened", pd.src, pd.dest),
+        vim.log.levels.INFO
       )
-      portal.close(pd)
-    end
-    -- vim.schedule_wrap(vim.api.nvim_buf_call)(pd.bufnr, function()
-    --   portal.close(pd)
-    -- end)
-  end)
 
-  -- update portal
-  local busy = false
+      -- open viewer
+      entry.viewer = vim.system(
+        parse_cmd(cfg.viewer.open_cmd, pd),
+        { text = true, detach = true },
+        vim.schedule_wrap(function(obj)
+          if obj.code ~= 0 then
+            vim.notify(
+              string.format("portal: failed to open viewer, exited with code %s\n\n(stderr) %s", obj.code, obj.stderr),
+              vim.log.levels.ERROR
+            )
+          end
+          if cfg.viewer.attach then
+            vim.api.nvim_buf_call(pd.bufnr, function()
+              portal.close(pd)
+            end)
+          end
+        end)
+      )
 
-  local function update()
-    busy = true
-    vim.cmd("w! " .. infile)
-    vim.system(parse_cmd(cfg.convert_cmd, pd), { text = true }, function()
-      busy = false
-      if cfg.viewer.refresh_cmd then
-        vim.system(parse_cmd(cfg.viewer.refresh_cmd, pd), { text = true })
+      -- update portal
+      local busy, queue = false, false
+      local function update()
+        busy = true
+        vim.system(
+          parse_cmd(cfg.convert_cmd, pd),
+          { stdin = vim.api.nvim_buf_get_lines(0, 0, -1, false), text = true },
+          vim.schedule_wrap(function()
+            busy = false
+            if cfg.viewer.refresh_cmd then
+              vim.system(parse_cmd(cfg.viewer.refresh_cmd, pd), { text = true })
+            end
+            if queue then
+              queue = false
+              update()
+            end
+          end)
+        )
       end
+
+      entry.update_autocmd = vim.api.nvim_create_autocmd(cfg.update_events, {
+        buffer = pd.bufnr,
+        callback = function()
+          if busy then
+            queue = true
+          else
+            update()
+          end
+        end,
+      })
+
+      -- close portal when no longer needed
+      vim.api.nvim_create_autocmd({ "BufFilePre", "BufDelete", "VimLeavePre" }, {
+        buffer = pd.bufnr,
+        callback = function()
+          portal.close(pd)
+        end,
+        once = true,
+      })
     end)
-  end
-
-  local throttled_update = utils.throttle(update, cfg.throttle_ms)
-
-  local update_autocmd = vim.api.nvim_create_autocmd(cfg.update_events, {
-    buffer = pd.bufnr,
-    callback = function()
-      if not busy then
-        if cfg.throttle_ms then
-          update()
-        else
-          throttled_update()
-        end
-      end
-    end,
-  })
-
-  -- close portal when no longer needed
-  local close_autocmd = vim.api.nvim_create_autocmd({ "BufFilePre", "BufDelete", "VimLeavePre" }, {
-    buffer = pd.bufnr,
-    callback = function()
-      portal.close(pd)
-    end,
-  })
-
-  -- add entry to list of open portals
-  portal._open_portals[pd.bufnr][pd.src][pd.dest] = {
-    viewer = viewer,
-    autocmds = { update_autocmd, close_autocmd },
-  }
+  )
 end
 
 --- Close a portal and its view
 function portal.close(pd)
-  local bufnr = vim.api.nvim_get_current_buf()
-  local p = portal._open_portals[pd.bufnr][pd.src][pd.dest]
+  pd.src = pd.src or vim.o.filetype
+  pd.bufnr = pd.bufnr or vim.api.nvim_get_current_buf()
 
-  vim.notify(
-    string.format("portal: closing buffer %d'sportal from %s to %s", pd.bufnr, pd.src, pd.dest),
-    vim.log.levels.INFO
-  )
-
-  -- remove files
-  local infile = portal.infile(pd)
-  if not vim.uv.fs_unlink(infile) then
-    vim.notify(string.format("portal: could not remove file %s", infile), vim.log.levels.ERROR)
+  local entry = portal._open_portals[pd.bufnr][pd.src][pd.dest]
+  if vim.tbl_isempty(entry) then
+    vim.notify("portal: portal from %s to %s is not open", vim.log.levels.INFO)
+    return
   end
 
   local outfile = portal.outfile(pd)
@@ -161,17 +170,16 @@ function portal.close(pd)
     vim.notify(string.format("portal: could not remove file %s", outfile), vim.log.levels.ERROR)
   end
 
-  -- remove autocmds for buffer
-  for _, autocmd in ipairs(p.autocmds) do
-    vim.api.nvim_del_autocmd(autocmd)
-  end
+  vim.api.nvim_del_autocmd(entry.update_autocmd)
 
   -- kill view
   print(p.viewer.pid)
   p.viewer:kill(15)
 
   -- remove entry
-  portal._open_portals[pd.bufnr][pd.src][pd.dest] = nil
+  entry = {}
+
+  vim.notify(string.format("portal: portal from %s to %s successfully closed", pd.src, pd.dest), vim.log.levels.INFO)
 end
 
 return portal

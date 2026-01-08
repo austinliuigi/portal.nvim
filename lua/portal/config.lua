@@ -1,54 +1,135 @@
----@alias cmd_t (string|function)[]
----@alias view_t { open_cmd: cmd_t, refresh_cmd: cmd_t }
----@alias dest_spec { convert_cmd: cmd_t, update_events: string|string[], view: view_t, throttle_ms: integer }
----@alias portal_spec table<string, dest_spec>
+local M = {}
 
----@class Config
----@field portals portal_spec[]
+--- Get the configuration for a portal, replacing any string names for
+--- viewers or converters with their corresponding tables
+--
+---@param pd portal.PortalDescription
+M.cfg_from_pd = function(pd)
+  if not require("portal.utils").tbl_contains(M.config.portals, { pd.src, pd.dest }) then
+    return nil
+  end
 
-local portal = require("portal")
-local utils = require("portal.utils")
+  local cfg = vim.deepcopy(config.portals[pd.src][pd.dest])
 
-local config = {
-  portals = utils.default_table({
-    md = {
+  if type(cfg.converter) == "string" then
+    cfg.converter = config.converters[cfg.converter]
+  end
+
+  if type(cfg.viewer) == "string" then
+    cfg.viewer = config.viewers[cfg.viewer]
+  end
+
+  return cfg
+end
+
+-- The default user configuration
+M.default_config = {
+  --=========================================================================
+  -- viewers
+  --=========================================================================
+  viewers = {
+    sioyek = {
+      open_cmd = { "sioyek", "$OUTFILE" },
+      detach = false,
+    },
+  },
+  --=========================================================================
+  -- portals
+  --=========================================================================
+  portals = {
+    ---------------------------------------------------------------------------
+    -- markdown
+    ---------------------------------------------------------------------------
+    markdown = {
+      -- html -----------------------------------------------------------------
       html = {
-        convert_cmd = function()
-          return {
+        converter = {
+          cmd = {
             "pandoc",
-            portal.infile,
             "--katex",
             "--standalone",
             "-o",
-            portal.outfile,
-          }
-        end,
-        viewer = {
-          open_cmd = { "firefox", portal.outfile },
-          refresh_cmd = nil,
+            "$OUTFILE",
+          },
+          daemon = false,
+          stdin = true,
         },
-        update_events = { "TextChanged", "TextChangedI" },
-        throttle_ms = nil,
+        viewer = {
+          open_cmd = { "firefox", "$OUTFILE" },
+          refresh_cmd = nil,
+          detach = true,
+        },
       },
+      -- pdf -----------------------------------------------------------------
       pdf = {
-        convert_cmd = function()
-          return {
+        converter = {
+          cmd = {
             "pandoc",
             "--from=markdown",
             "--to=pdf",
             "-o",
-            portal.outfile,
-          }
-        end,
-        viewer = {
-          open_cmd = { "sioyek", portal.outfile },
-          refresh_cmd = nil,
+            "$OUTFILE",
+          },
+          daemon = false,
+          stdin = true,
         },
-        update_events = { "TextChanged", "TextChangedI" },
-        throttle_ms = 1000,
+        viewer = "sioyek",
+      },
+      presenterm = {
+        converter = nil,
+        viewer = {
+          open_cmd = { "kitty", "presenterm", "$INFILE" },
+          detach = false,
+        },
       },
     },
-  }),
+    ---------------------------------------------------------------------------
+    -- typst
+    ---------------------------------------------------------------------------
+    typst = {
+      -- pdf -----------------------------------------------------------------
+      pdf = {
+        converter = {
+          cmd = { "typst", "watch", "$INFILE", "$OUTFILE" },
+          daemon = true,
+          stdin = false,
+        },
+        viewer = "sioyek",
+      },
+    },
+    ---------------------------------------------------------------------------
+    -- manm
+    ---------------------------------------------------------------------------
+    manim = {
+      -- png -----------------------------------------------------------------
+      png = {
+        converter = {
+          cmd = { "manim", "--format=png", "$INFILE", "-o", "$OUTFILE" },
+          daemon = false,
+          stdin = false,
+        },
+      },
+      -- gif -----------------------------------------------------------------
+      gif = {
+        converter = {
+          cmd = { "manim", "-ql", "--format=gif", "$INFILE", "-o", "$OUTFILE" },
+          daemon = false,
+          stdin = false,
+        },
+      },
+      -- mp4 -----------------------------------------------------------------
+      mp4 = {
+        converter = {
+          cmd = { "manim", "-ql", "--format=mp4", "$INFILE", "-o", "$OUTFILE" },
+          daemon = false,
+          stdin = false,
+        },
+      },
+    },
+  },
 }
 
-return config
+-- The active user configuration
+M.config = vim.deepcopy(M.default_config)
+
+return M

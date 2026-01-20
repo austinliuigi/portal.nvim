@@ -1,38 +1,73 @@
 local M = {}
 
---- Get the configuration for a portal, replacing any string names for
---- viewers or converters with their corresponding tables
+--- Get the active configuration for a portal, replacing any string names
+--- for viewers or converters with their corresponding tables
 --
----@param pd portal.PortalDescription
-M.cfg_from_pd = function(pd)
-  if not require("portal.utils").tbl_contains(M.config.portals, { pd.src, pd.dest }) then
+---@param src string
+---@param dest string
+---@return portal.PortalConfig?
+M.get_portal_config = function(src, dest)
+  local cfg = vim.deepcopy(require("portal.utils").tbl_get(M.config.portals, { src, dest }))
+
+  if cfg == nil then
     return nil
   end
 
-  local cfg = vim.deepcopy(config.portals[pd.src][pd.dest])
-
   if type(cfg.converter) == "string" then
-    cfg.converter = config.converters[cfg.converter]
+    cfg.converter = M.config.converters[cfg.converter]
   end
 
   if type(cfg.viewer) == "string" then
-    cfg.viewer = config.viewers[cfg.viewer]
+    cfg.viewer = M.config.viewers[cfg.viewer]
   end
+
+  cfg.converter = vim.tbl_extend("keep", cfg.converter, M.default_converter_config)
+
+  cfg.viewer = vim.tbl_extend("keep", cfg.viewer, M.default_viewer_config)
 
   return cfg
 end
 
--- The default user configuration
+--- Default converter configuration
+--
+M.default_converter_config = {
+  stdin = false,
+  daemon = false,
+  success_condition = { exit_code = 0 },
+  failure_condition = {},
+}
+
+--- Default viewer configuration
+--
+M.default_viewer_config = {
+  detach = true,
+}
+
+--- Default user configuration
+--
 M.default_config = {
+  --=========================================================================
+  -- general
+  --=========================================================================
+  cache_retention_days = 7,
+
   --=========================================================================
   -- viewers
   --=========================================================================
   viewers = {
     sioyek = {
-      open_cmd = { "sioyek", "$OUTFILE" },
+      open_cmd = { "sioyek", "--instance-name", "$ID", "$OUTFILE" },
+      switch_cmd = { "sioyek", "--instance-name", "$ID", "$OUTFILE" },
+      detach = false,
+    },
+    mpv = {
+      open_cmd = { "mpv", "--input-ipc-server=$TEMPDIR/$ID.socket", "$OUTFILE" },
+      refresh_cmd = { "bash", "-c", 'echo \'{ "command": ["loadfile", "$OUTFILE"] }\' | socat - $TEMPDIR/$ID.socket' },
+      switch_cmd = { "bash", "-c", 'echo \'{ "command": ["loadfile", "$OUTFILE"] }\' | socat - $TEMPDIR/$ID.socket' },
       detach = false,
     },
   },
+
   --=========================================================================
   -- portals
   --=========================================================================
@@ -41,7 +76,7 @@ M.default_config = {
     -- markdown
     ---------------------------------------------------------------------------
     markdown = {
-      -- html -----------------------------------------------------------------
+      -- markdown to html -----------------------------------------------------------------
       html = {
         converter = {
           cmd = {
@@ -51,8 +86,8 @@ M.default_config = {
             "-o",
             "$OUTFILE",
           },
-          daemon = false,
           stdin = true,
+          daemon = false,
         },
         viewer = {
           open_cmd = { "firefox", "$OUTFILE" },
@@ -60,7 +95,7 @@ M.default_config = {
           detach = true,
         },
       },
-      -- pdf -----------------------------------------------------------------
+      -- markdown to pdf -----------------------------------------------------------------
       pdf = {
         converter = {
           cmd = {
@@ -70,11 +105,12 @@ M.default_config = {
             "-o",
             "$OUTFILE",
           },
-          daemon = false,
           stdin = true,
+          daemon = false,
         },
         viewer = "sioyek",
       },
+      -- markdown to presenterm -----------------------------------------------------------------
       presenterm = {
         converter = nil,
         viewer = {
@@ -87,49 +123,56 @@ M.default_config = {
     -- typst
     ---------------------------------------------------------------------------
     typst = {
-      -- pdf -----------------------------------------------------------------
+      -- typst to pdf -----------------------------------------------------------------
       pdf = {
         converter = {
           cmd = { "typst", "watch", "$INFILE", "$OUTFILE" },
-          daemon = true,
           stdin = false,
+          daemon = true,
+          success_condition = { stderr_contains = "compiled" },
+          failure_condition = { stderr_contains = "error" },
         },
         viewer = "sioyek",
       },
     },
     ---------------------------------------------------------------------------
-    -- manm
+    -- manim
+    -- TODO: run in temp directory?
     ---------------------------------------------------------------------------
     manim = {
-      -- png -----------------------------------------------------------------
+      -- manim to png -----------------------------------------------------------------
       png = {
         converter = {
           cmd = { "manim", "--format=png", "$INFILE", "-o", "$OUTFILE" },
-          daemon = false,
           stdin = false,
+          daemon = false,
         },
+        viewer = "mpv",
       },
-      -- gif -----------------------------------------------------------------
+      -- manim to gif -----------------------------------------------------------------
       gif = {
         converter = {
           cmd = { "manim", "-ql", "--format=gif", "$INFILE", "-o", "$OUTFILE" },
-          daemon = false,
           stdin = false,
+          daemon = false,
         },
+        viewer = "mpv",
       },
-      -- mp4 -----------------------------------------------------------------
+      -- manim to mp4 -----------------------------------------------------------------
       mp4 = {
         converter = {
           cmd = { "manim", "-ql", "--format=mp4", "$INFILE", "-o", "$OUTFILE" },
-          daemon = false,
           stdin = false,
+          daemon = false,
         },
+        viewer = "mpv",
       },
     },
   },
 }
 
--- The active user configuration
+--- Active user configuration
+--
 M.config = vim.deepcopy(M.default_config)
 
 return M

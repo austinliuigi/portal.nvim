@@ -290,8 +290,8 @@ require("portal").setup({
 | `cmd`                | `portal.Cmd`                        | Command used to generate output file. |
 | `stdin`              | `boolean`                           | True if `cmd` uses stdin as its input. |
 | `daemon`             | `boolean`                           | True if `cmd` creates a long-running daemon process which triggers a conversion on file changes. |
-| `success_condition` | `portal.ConverterSuccessConditions` | Conditions that indicate a conversion succeeded in generating an output. When a condition is met, corresponding viewers are updated. By default, an exit code of 0 indicates a success. Daemon converters should set either `stdout_contains` or `stderr_contains`. |
-| `failure_condition` | `portal.ConverterFailureConditions` | Conditions that indicate a conversion failed in generating an output. If `success_condition` contains `exit_code`, then the inverse is used to indicate a failure. |
+| `success_condition` | `portal.ConverterSuccessConditions` | Condition that indicates a conversion succeeded in generating an output. By default, an exit code of 0 indicates a success. Daemon converters should set either `stdout_contains` or `stderr_contains`. |
+| `failure_condition` | `portal.ConverterFailureConditions` | Condition that indicates a conversion failed in generating an output. If `success_condition` contains `exit_code`, then the inverse is used to indicate a failure. Otherwise, either `stdout_contains` or `stderr_contains` should be set. |
 
 
 ### Viewers

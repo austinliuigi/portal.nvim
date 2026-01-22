@@ -2,7 +2,7 @@
 
 Create portals to view files in different formats.
 
-https://github.com/user-attachments/assets/941ac786-2fe0-4305-accd-907d616d3159
+https://github.com/user-attachments/assets/afb485b0-6f2c-4738-9381-adaac182a475
 
 
 ## Features

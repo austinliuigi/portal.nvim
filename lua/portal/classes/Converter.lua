@@ -1,10 +1,10 @@
 local M = {
-  ---@type { [string]: { [string]: { [integer]: portal.Converter } } }
+  ---@type { [integer]: { [string]: { [string]: portal.Converter } } }
   instances = {},
 }
 M.__index = M
 
---- Create a new Converter object
+--- Create a new Converter object. This is a factory to create specific converter types.
 --
 ---@param src string
 ---@param dest string
@@ -12,7 +12,7 @@ M.__index = M
 ---@return portal.Converter?
 function M:construct(src, dest, bufnr)
   -- return existing instance if one exists with the same target
-  local instance = require("portal.utils").tbl_get(M.instances, { src, dest, bufnr })
+  local instance = require("portal.utils").tbl_get(M.instances, { bufnr, src, dest })
   if instance then
     return instance
   end
@@ -35,7 +35,7 @@ function M:construct(src, dest, bufnr)
   -- perform initial conversion
   instance:convert()
 
-  require("portal.utils").tbl_set(M.instances, { src, dest, bufnr }, instance)
+  require("portal.utils").tbl_set(M.instances, { bufnr, src, dest }, instance)
   return instance
 end
 
@@ -50,7 +50,7 @@ function M:destruct()
     end
   end
 
-  M.instances[self.src][self.dest][self.bufnr] = nil
+  M.instances[self.bufnr][self.src][self.dest] = nil
   require("portal.utils").tbl_prune(M.instances, 2)
 end
 

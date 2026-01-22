@@ -28,7 +28,7 @@ function M:open()
           { title = "portal.nvim" }
         )
       end
-      if not self.cfg.detach then
+      if not self.cfg.detach and require("portal").is_open(self.src, self.dest, self.bufnr) then
         require("portal").close(self.src, self.dest, self.bufnr)
       end
     end)

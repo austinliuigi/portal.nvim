@@ -27,7 +27,7 @@ function M:construct(src, dest)
     is_target_outdated = false,
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-globalviewer-%s-%s", src, dest), {}),
     cfg = require("portal.config").get_portal_config(src, dest).viewer,
-  }, self)
+  }, M)
 
   instance.cmd_substitutions = {
     ["$TEMPDIR"] = require("portal").tempdir,
@@ -65,7 +65,12 @@ end
 --- Destroy GlobalViewer object
 --
 function M:destruct()
-  self.converter:detach_viewer(self)
+  M.instances[self.src][self.dest] = nil
+  require("portal.utils").tbl_prune(M.instances, 1)
+
+  if self.converter ~= nil then
+    self.converter:detach_viewer(self)
+  end
 
   vim.api.nvim_del_augroup_by_id(self.augroup_id)
 
@@ -74,9 +79,6 @@ function M:destruct()
       self.proc:kill(15)
     end
   end
-
-  M.instances[self.src][self.dest] = nil
-  require("portal.utils").tbl_prune(M.instances, 1)
 end
 
 --- Switch buffer that global viewer is attached to
@@ -89,12 +91,6 @@ function M:switch(bufnr)
   if self.converter ~= nil and self.converter.bufnr == bufnr then
     return
   end
-
-  vim.notify(
-    string.format("Portal from %s to %s switching target", self.src, self.dest),
-    vim.log.levels.INFO,
-    { title = "portal.nvim" }
-  )
 
   -- remove old converter
   if self.converter ~= nil then

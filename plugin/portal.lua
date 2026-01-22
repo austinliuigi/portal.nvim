@@ -25,12 +25,23 @@ end, {
       arg_index = arg_index + 1
     end
 
+    local completions = {}
+    local portal_configs = require("portal.config").config.portals
+
+    -- completion for first argument --------------------
     if arg_index == 1 then
-      return vim.tbl_keys(require("portal.config").config.portals)
+      -- add destinations of portals whose source is the current filetype
+      completions = vim.tbl_keys(portal_configs[vim.o.filetype] or {})
+      -- add all configured sources
+      vim.list_extend(completions, vim.tbl_keys(portal_configs))
+
+    -- completion for first argument --------------------
     elseif arg_index == 2 then
-      return vim.tbl_keys(require("portal.config").config.portals[args[1]])
+      -- add destinations of portals whose source is the first argument
+      completions = vim.tbl_keys(portal_configs[args[1]] or {})
     end
-    return {}
+
+    return completions
   end,
 })
 
@@ -59,35 +70,37 @@ end, {
     end
 
     local completions = {}
-    if arg_index == 1 then
-      if bang then
-        for src, dest_tbl in pairs(require("portal.classes.LocalViewer").instances) do
-          for dest, bufnr_tbl in pairs(dest_tbl) do
-            for bufnr, _ in pairs(bufnr_tbl) do
-              if bufnr == vim.api.nvim_get_current_buf() then
-                table.insert(completions, src)
-                break
-              end
-            end
-          end
-        end
-      else
-        completions = vim.tbl_keys(require("portal.classes.GlobalViewer").instances)
+
+    -- local portals ------------------------------
+    if bang then
+      local curr_buf_instances = require("portal.classes.LocalViewer").instances[vim.api.nvim_get_current_buf()] or {}
+      -- completion for first argument ----------
+      if arg_index == 1 then
+        -- add destinations of open local portals attached to the current buffer whose source is the current filetype
+        completions = vim.tbl_keys(curr_buf_instances[vim.o.filetype] or {})
+        -- add sources of open local portals attached to the current buffer
+        vim.list_extend(completions, vim.tbl_keys(curr_buf_instances))
+
+        -- completion for second argument ----------
+      elseif arg_index == 2 then
+        -- add destinations of open portals whose source is the first argument
+        completions = vim.tbl_keys(curr_buf_instances[args[1]] or {})
       end
-    elseif arg_index == 2 then
-      if bang then
-        for src, dest_tbl in pairs(require("portal.classes.LocalViewer").instances) do
-          for dest, bufnr_tbl in pairs(dest_tbl) do
-            for bufnr, _ in pairs(bufnr_tbl) do
-              if bufnr == vim.api.nvim_get_current_buf() then
-                table.insert(completions, dest)
-                break
-              end
-            end
-          end
-        end
-      else
-        completions = vim.tbl_keys(require("portal.classes.GlobalViewer").instances[args[1]])
+
+    -- global portals ------------------------------
+    else
+      local global_instances = require("portal.classes.GlobalViewer").instances
+      -- completion for first argument ----------
+      if arg_index == 1 then
+        -- add destinations of open local portals attached to the current buffer whose source is the current filetype
+        completions = vim.tbl_keys(global_instances[vim.o.filetype] or {})
+        -- add sources of open local portals attached to the current buffer
+        vim.list_extend(completions, vim.tbl_keys(global_instances))
+
+      -- completion for second argument ----------
+      elseif arg_index == 2 then
+        -- add destinations of open portals whose source is the first argument
+        completions = vim.tbl_keys(global_instances[args[1]] or {})
       end
     end
     return completions

@@ -66,7 +66,7 @@ function M.is_open(src, dest, bufnr)
   if bufnr == nil then
     return require("portal.utils").tbl_get(require("portal.classes.GlobalViewer").instances, { src, dest }) ~= nil
   end
-  return require("portal.utils").tbl_get(require("portal.classes.LocalViewer").instances, { src, dest, bufnr }) ~= nil
+  return require("portal.utils").tbl_get(require("portal.classes.LocalViewer").instances, { bufnr, src, dest }) ~= nil
 end
 
 --- List open portals
@@ -80,9 +80,9 @@ function M.list()
   end
 
   print("Local Portals:")
-  for src, dest_tbl in pairs(require("portal.classes.LocalViewer").instances) do
-    for dest, bufnr_tbl in pairs(dest_tbl) do
-      for bufnr, _ in pairs(bufnr_tbl) do
+  for bufnr, src_tbl in pairs(require("portal.classes.LocalViewer").instances) do
+    for src, dest_tbl in pairs(src_tbl) do
+      for dest, _ in pairs(dest_tbl) do
         print(
           string.format(
             "    - %s --> %s (%s)",
@@ -103,7 +103,7 @@ end
 ---@param bufnr? integer
 function M.open(src, dest, bufnr)
   src = src or vim.o.filetype
-  require("portal.utils")
+  require("portal.status").enable()
 
   -- an explicitly provided destination is required
   if dest == nil then
@@ -157,12 +157,6 @@ function M.open(src, dest, bufnr)
   else
     require("portal.classes.GlobalViewer"):construct(src, dest)
   end
-
-  vim.notify(
-    string.format("Portal from %s to %s successfully opened", src, dest),
-    vim.log.levels.INFO,
-    { title = "portal.nvim" }
-  )
 end
 
 --- Close a portal and its view
@@ -179,7 +173,7 @@ function M.close(src, dest, bufnr)
   end
 
   if not M.is_open(src, dest, bufnr) then
-    -- vim.notify("Portal from %s to %s is not open", vim.log.levels.INFO, { title = "portal.nvim" })
+    vim.notify("Portal from %s to %s is not open", vim.log.levels.INFO, { title = "portal.nvim" })
     return
   end
 
@@ -187,16 +181,10 @@ function M.close(src, dest, bufnr)
 
   -- destroy viewer
   if bufnr then
-    require("portal.classes.LocalViewer").instances[src][dest][bufnr]:destruct()
+    require("portal.classes.LocalViewer").instances[bufnr][src][dest]:destruct()
   else
     require("portal.classes.GlobalViewer").instances[src][dest]:destruct()
   end
-
-  vim.notify(
-    string.format("Portal from %s to %s successfully closed", src, dest),
-    vim.log.levels.INFO,
-    { title = "portal.nvim" }
-  )
 end
 
 return M

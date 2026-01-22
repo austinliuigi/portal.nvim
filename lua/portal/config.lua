@@ -21,7 +21,9 @@ M.get_portal_config = function(src, dest)
     cfg.viewer = M.config.viewers[cfg.viewer]
   end
 
-  cfg.converter = vim.tbl_extend("keep", cfg.converter, M.default_converter_config)
+  if cfg.converter ~= nil then
+    cfg.converter = vim.tbl_extend("keep", cfg.converter, M.default_converter_config)
+  end
 
   cfg.viewer = vim.tbl_extend("keep", cfg.viewer, M.default_viewer_config)
 

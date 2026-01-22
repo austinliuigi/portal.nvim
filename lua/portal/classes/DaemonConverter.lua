@@ -20,7 +20,8 @@ function M:construct(src, dest, bufnr)
     viewers = {},
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-converter-%s-%s-%s", src, dest, bufnr), {}),
     cfg = require("portal.config").get_portal_config(src, dest).converter,
-  }, self)
+    status = "idle",
+  }, M)
 
   return instance
 end
@@ -28,6 +29,7 @@ end
 --- Start daemon process
 --
 function M:convert()
+  self.status = "converting"
   self.proc = vim.system(require("portal.cmd").interpolate(self.cfg.cmd, self.cmd_substitutions), {
     text = true,
     detach = false,
@@ -69,24 +71,15 @@ end
 --- Handle a conversion which succeeded to produce an output
 --
 function M:handle_successful_conversion()
+  self.status = "succeeded"
   self.has_converted = true
   self:update_viewers()
-
-  vim.notify(
-    string.format("Portal from %s to %s succeeded conversion", self.src, self.dest),
-    vim.log.levels.INFO,
-    { title = "portal.nvim" }
-  )
 end
 
 --- Handle a conversion which failed to produce an output
 --
 function M:handle_failed_conversion()
-  vim.notify(
-    string.format("Portal from %s to %s failed conversion", self.src, self.dest),
-    vim.log.levels.WARN,
-    { title = "portal.nvim" }
-  )
+  self.status = "failed"
 end
 
 return M

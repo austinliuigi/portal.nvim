@@ -22,7 +22,8 @@ function M:construct(src, dest, bufnr)
     viewers = {},
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-converter-%s-%s-%s", src, dest, bufnr), {}),
     cfg = require("portal.config").get_portal_config(src, dest).converter,
-  }, self)
+    status = "idle",
+  }, M)
 
   -- reconvert when source content changes
   vim.api.nvim_create_autocmd(instance.cfg.stdin and { "TextChanged", "TextChangedI" } or "BufWritePost", {
@@ -43,11 +44,7 @@ end
 --- Perform conversion to generate corresponding output file from current input file
 --
 function M:convert()
-  vim.notify(
-    string.format("Portal from %s to %s initiating conversion", self.src, self.dest),
-    vim.log.levels.INFO,
-    { title = "portal.nvim" }
-  )
+  self.status = "converting"
   self.busy = true
 
   local cache_outfile = require("portal.cache").get_cache_outfile(self.src, self.dest, self.bufnr)
@@ -62,6 +59,7 @@ function M:convert()
 
     self.busy = false
     self.has_converted = true
+    self.status = "succeeded"
     self:update_viewers()
 
     if self.queued then
@@ -138,21 +136,13 @@ function M:handle_successful_conversion(cache_outfile)
   self.has_converted = true
   self:update_viewers()
 
-  vim.notify(
-    string.format("Portal from %s to %s succeeded conversion", self.src, self.dest),
-    vim.log.levels.INFO,
-    { title = "portal.nvim" }
-  )
+  self.status = "succeeded"
 end
 
 --- Handle a conversion which failed to produce an output
 --
 function M:handle_failed_conversion()
-  vim.notify(
-    string.format("Portal from %s to %s failed conversion", self.src, self.dest),
-    vim.log.levels.WARN,
-    { title = "portal.nvim" }
-  )
+  self.status = "failed"
 end
 
 return M

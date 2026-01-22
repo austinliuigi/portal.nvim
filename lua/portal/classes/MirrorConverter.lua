@@ -19,7 +19,8 @@ function M:construct(src, dest, bufnr)
     has_converted = false,
     viewers = {},
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-converter-%s-%s-%s", src, dest, bufnr), {}),
-  }, self)
+    status = "idle",
+  }, M)
 
   -- reconvert when source content changes
   vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
@@ -36,6 +37,7 @@ end
 --- Generate outfile
 --
 function M:convert()
+  self.status = "succeeded"
   self.has_converted = true
   self:update_viewers()
 end

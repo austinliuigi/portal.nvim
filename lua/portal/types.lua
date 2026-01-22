@@ -19,6 +19,7 @@
 ---@field attach_viewer function(): nil
 ---@field detach_viewer function(): nil
 ---@field update_viewers function(): nil
+---@field status portal.Status
 
 ---@class portal.OneShotConverter: portal.Converter
 ---@field busy boolean
@@ -89,3 +90,19 @@
 ---@field converters { [string]: portal.ConverterConfig }
 ---@field viewers { [string]: portal.ViewerConfig }
 ---@field portals { [string]: { [string]: portal.PortalConfig } }
+
+--==============================================================================
+-- STATUS
+--==============================================================================
+
+---@alias portal.Status "idle"|"converting"|"failed"|"succeeded"
+
+---@alias portal.StatusChunk {[1]: string, [2]?: string|string[]}
+---@alias portal.StatusLine portal.StatusChunk[]
+
+---@class portal.StatusWindow
+---@field parent_winnr integer
+---@field bufnr integer
+---@field namespace_id integer
+---@field winnr? integer
+---@field lines portal.StatusLine[]

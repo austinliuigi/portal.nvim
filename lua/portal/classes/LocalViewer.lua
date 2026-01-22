@@ -1,6 +1,6 @@
 local M = setmetatable(
   {
-    ---@type { [string]: { [string]: { [integer]: portal.LocalViewer } } }
+    ---@type { [integer]: { [string]: { [string]: portal.LocalViewer } } }
     instances = {},
   },
   -- inherit from Viewer class
@@ -16,7 +16,7 @@ M.__index = M
 ---@return portal.LocalViewer
 function M:construct(src, dest, bufnr)
   -- return existing instance if one exists with the same target
-  local instance = require("portal.utils").tbl_get(M.instances, { src, dest, bufnr })
+  local instance = require("portal.utils").tbl_get(M.instances, { bufnr, src, dest })
   if instance then
     return instance
   end
@@ -28,7 +28,7 @@ function M:construct(src, dest, bufnr)
     id = vim.fn.getpid() .. src .. dest .. bufnr,
     converter = require("portal.classes.Converter"):construct(src, dest, bufnr),
     cfg = require("portal.config").get_portal_config(src, dest).viewer,
-  }, self)
+  }, M)
 
   instance.cmd_substitutions = {
     ["$TEMPDIR"] = require("portal").tempdir,
@@ -42,13 +42,16 @@ function M:construct(src, dest, bufnr)
 
   instance.converter:attach_viewer(instance)
 
-  require("portal.utils").tbl_set(M.instances, { src, dest, bufnr }, instance)
+  require("portal.utils").tbl_set(M.instances, { bufnr, src, dest }, instance)
   return instance
 end
 
 --- Destroy LocalViewer object
 --
 function M:destruct()
+  M.instances[self.bufnr][self.src][self.dest] = nil
+  require("portal.utils").tbl_prune(M.instances, 2)
+
   self.converter:detach_viewer(self)
 
   if self:is_open() then -- portals that never converted successfully have not opened
@@ -56,9 +59,6 @@ function M:destruct()
       self.proc:kill(15)
     end
   end
-
-  M.instances[self.src][self.dest][self.bufnr] = nil
-  require("portal.utils").tbl_prune(M.instances, 2)
 end
 
 return M

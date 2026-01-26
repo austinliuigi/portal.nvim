@@ -19,7 +19,7 @@ end
 --- Destroy a StatusWindow object
 --
 function M:destruct()
-  if self.winnr then
+  if self.winnr and vim.api.nvim_win_is_valid(self.winnr) then
     vim.api.nvim_win_close(self.winnr, true)
   end
   if self.bufnr then

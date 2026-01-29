@@ -25,7 +25,6 @@ function M:construct(src, dest, bufnr)
     src = src,
     dest = dest,
     bufnr = bufnr,
-    id = vim.fn.getpid() .. src .. dest .. bufnr,
     converter = require("portal.classes.Converter"):construct(src, dest, bufnr),
     cfg = require("portal.config").get_portal_config(src, dest).viewer,
   }, M)
@@ -34,7 +33,7 @@ function M:construct(src, dest, bufnr)
     ["$TEMPDIR"] = require("portal").tempdir,
     ["$INFILE"] = vim.api.nvim_buf_get_name(instance.converter.bufnr),
     ["$OUTFILE"] = require("portal").get_outfile(src, dest, instance.converter.bufnr),
-    ["$ID"] = string.format("portal-%s-%s-%s", vim.fn.getpid(), src, dest),
+    ["$ID"] = string.format("portal-%s-%s-%s-%s", vim.fn.getpid(), src, dest, bufnr),
     ["$PID"] = function()
       return self.proc and self.proc.pid or ""
     end,

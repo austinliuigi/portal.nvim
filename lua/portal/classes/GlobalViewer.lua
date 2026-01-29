@@ -23,7 +23,6 @@ function M:construct(src, dest)
   instance = setmetatable({
     src = src,
     dest = dest,
-    id = vim.fn.getpid() .. src .. dest,
     is_target_outdated = false,
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-globalviewer-%s-%s", src, dest), {}),
     cfg = require("portal.config").get_portal_config(src, dest).viewer,

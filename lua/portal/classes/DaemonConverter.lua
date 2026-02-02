@@ -22,6 +22,7 @@ function M:construct(src, dest, bufnr)
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-converter-%s-%s-%s", src, dest, bufnr), {}),
     cfg = cfg,
     status = "idle",
+    log_buf = vim.api.nvim_create_buf(false, true),
 
     ---@diagnostic disable-next-line: need-check-nil
     cmd = require("portal.utils").eval_if_func(cfg.cmd),
@@ -41,6 +42,11 @@ function M:convert()
     stdin = self.cfg.stdin and vim.api.nvim_buf_get_lines(0, 0, -1, false) or false,
     stdout = vim.schedule_wrap(function(_, stdout_str)
       if stdout_str then
+        -- log output
+        local lines = vim.split(stdout_str, "\n", { plain = true })
+        require("portal.utils").append_and_scroll(self.log_buf, lines)
+
+        -- handle failure/success conditions
         if
           self.cfg.failure_condition.stdout_contains
           and string.match(stdout_str, self.cfg.failure_condition.stdout_contains)
@@ -56,6 +62,11 @@ function M:convert()
     end),
     stderr = vim.schedule_wrap(function(_, stderr_str)
       if stderr_str then
+        -- log output
+        local lines = vim.split(stderr_str, "\n", { plain = true })
+        require("portal.utils").append_and_scroll(self.log_buf, lines)
+
+        -- handle failure/success conditions
         if
           self.cfg.failure_condition.stderr_contains
           and string.match(stderr_str, self.cfg.failure_condition.stderr_contains)

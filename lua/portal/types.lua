@@ -107,8 +107,8 @@
 ---@alias portal.StatusLine portal.StatusChunk[]
 
 ---@class portal.StatusWindow
----@field parent_winnr integer
+---@field parent_winid integer
 ---@field bufnr integer
 ---@field namespace_id integer
----@field winnr? integer
+---@field winid? integer
 ---@field lines portal.StatusLine[]

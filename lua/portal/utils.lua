@@ -127,4 +127,20 @@ function M.tbl_prune(tbl, depth)
   end
 end
 
+--- Append lines to a buffer and scroll to the bottom
+--
+---@param bufnr integer
+---@param lines string[]
+function M.append_and_scroll(bufnr, lines)
+  vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, lines)
+  local winid = vim.fn.bufwinid(bufnr)
+  if winid ~= -1 then
+    local winid_screen_lines = vim.api.nvim_win_get_height(winid)
+
+    vim.api.nvim_win_call(winid, function()
+      vim.cmd(string.format("normal! G%dkzzG", winid_screen_lines / 3))
+    end)
+  end
+end
+
 return M

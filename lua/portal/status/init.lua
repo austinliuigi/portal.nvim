@@ -1,4 +1,5 @@
 local M = {
+  -- parent winid to StatusWindow
   status_wins = {},
 }
 
@@ -24,8 +25,8 @@ end
 local function get_visible_wins()
   return vim
     .iter(vim.api.nvim_tabpage_list_wins(0))
-    :filter(function(winnr)
-      return vim.api.nvim_win_get_config(winnr).zindex == nil
+    :filter(function(winid)
+      return vim.api.nvim_win_get_config(winid).zindex == nil
     end)
     :totable()
 end
@@ -34,22 +35,22 @@ end
 --
 function M.update()
   -- get active converters for each visible window
-  local winnr_to_converters = {}
-  for _, winnr in ipairs(get_visible_wins()) do
-    local bufnr = vim.api.nvim_win_get_buf(winnr)
+  local winid_to_converters = {}
+  for _, winid in ipairs(get_visible_wins()) do
+    local bufnr = vim.api.nvim_win_get_buf(winid)
     for src, dest_tbl in pairs(require("portal.classes.Converter").instances[bufnr] or {}) do
       for dest, converter in pairs(dest_tbl) do
-        winnr_to_converters[winnr] = winnr_to_converters[winnr] or {}
-        table.insert(winnr_to_converters[winnr], converter)
+        winid_to_converters[winid] = winid_to_converters[winid] or {}
+        table.insert(winid_to_converters[winid], converter)
       end
     end
   end
 
   -- remove status windows which aren't active anymore
-  M.prune(vim.tbl_keys(winnr_to_converters))
+  M.prune(vim.tbl_keys(winid_to_converters))
 
   -- get lines to be rendered for each window with active converters
-  for winnr, converters in pairs(winnr_to_converters) do
+  for winid, converters in pairs(winid_to_converters) do
     local lines = {}
     for _, converter in ipairs(converters) do
       table.insert(lines, {
@@ -62,8 +63,8 @@ function M.update()
     require("portal.status.lines").sort(lines)
 
     -- create/update status windows
-    M.status_wins[winnr] = M.status_wins[winnr] or require("portal.status.classes.StatusWindow"):construct(winnr)
-    M.status_wins[winnr]:set_lines(lines)
+    M.status_wins[winid] = M.status_wins[winid] or require("portal.status.classes.StatusWindow"):construct(winid)
+    M.status_wins[winid]:set_lines(lines)
   end
 end
 
@@ -72,14 +73,14 @@ end
 ---@param active_wins integer[]
 function M.prune(active_wins)
   local active_wins_map = {}
-  for _, winnr in ipairs(active_wins) do
-    active_wins_map[winnr] = true
+  for _, winid in ipairs(active_wins) do
+    active_wins_map[winid] = true
   end
 
-  for winnr, status_win in pairs(M.status_wins) do
-    if not active_wins_map[winnr] then
+  for winid, status_win in pairs(M.status_wins) do
+    if not active_wins_map[winid] then
       status_win:destruct()
-      M.status_wins[winnr] = nil
+      M.status_wins[winid] = nil
     end
   end
 end
@@ -116,9 +117,9 @@ function M.disable()
     M.timer:close()
 
     -- close all status wins
-    for winnr, status_win in pairs(M.status_wins) do
+    for winid, status_win in pairs(M.status_wins) do
       status_win:destruct()
-      M.status_wins[winnr] = nil
+      M.status_wins[winid] = nil
     end
 
     vim.api.nvim_del_augroup_by_id(M.augroup_id)

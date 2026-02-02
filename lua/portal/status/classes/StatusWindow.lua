@@ -3,11 +3,11 @@ M.__index = M
 
 --- Create a StatusWindow object
 --
----@param parent_winnr integer The window that this status win should be anchored to
+---@param parent_winid integer The window that this status win should be anchored to
 ---@return portal.StatusWindow
-function M:construct(parent_winnr)
+function M:construct(parent_winid)
   local instance = setmetatable({
-    parent_winnr = parent_winnr,
+    parent_winid = parent_winid,
     bufnr = vim.api.nvim_create_buf(false, true),
     namespace_id = vim.api.nvim_create_namespace(""),
     lines = {},
@@ -19,8 +19,8 @@ end
 --- Destroy a StatusWindow object
 --
 function M:destruct()
-  if self.winnr and vim.api.nvim_win_is_valid(self.winnr) then
-    vim.api.nvim_win_close(self.winnr, true)
+  if self.winid and vim.api.nvim_win_is_valid(self.winid) then
+    vim.api.nvim_win_close(self.winid, true)
   end
   if self.bufnr then
     vim.api.nvim_buf_clear_namespace(self.bufnr, self.namespace_id, 0, -1)
@@ -33,28 +33,29 @@ end
 function M:show()
   local width, height = require("portal.status.lines").get_dims(self.lines)
   local row = 0
-  local col = vim.api.nvim_win_get_width(self.parent_winnr)
+  local col = vim.api.nvim_win_get_width(self.parent_winid)
 
-  if self.winnr == nil or not vim.api.nvim_win_is_valid(self.winnr) then
+  if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
     -- create status window
-    self.winnr = vim.api.nvim_open_win(self.bufnr, false, {
+    self.winid = vim.api.nvim_open_win(self.bufnr, false, {
       relative = "win",
-      win = self.parent_winnr,
+      win = self.parent_winid,
       width = width,
       height = height,
       row = row,
       col = col,
       anchor = "NE",
       focusable = false,
+      mouse = true,
       noautocmd = true,
       style = "minimal",
     })
-    vim.wo[self.winnr].winblend = 100
+    vim.wo[self.winid].winblend = 100
   else
     -- reposition status window
-    vim.api.nvim_win_set_config(self.winnr, {
+    vim.api.nvim_win_set_config(self.winid, {
       relative = "win",
-      win = self.parent_winnr,
+      win = self.parent_winid,
       width = width,
       height = height,
       row = row,

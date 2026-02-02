@@ -137,13 +137,6 @@ git clone --depth=1 https://github.com/austinliuigi/portal.nvim.git \
 ### Opening portals
 
 ```
-:PortalOpen
-```
-
-Opens a dialog to select the type of portal to open.
-
-
-```
 :PortalOpen[!] [input_type] <output_type>
 ```
 
@@ -159,12 +152,6 @@ Opens a portal and viewer to the desired format. By default, a local portal atta
 ### Closing portals
 
 ```
-:PortalClose
-```
-
-Opens a dialog to select the portal to close.
-
-```
 :PortalClose[!] [input_type] <output_type>
 ```
 
@@ -176,13 +163,6 @@ If no matching portal is found, it exits silently.
 
 `output_type`: filetype
 - The output filtype type of the portal to close.
-
-
-```
-:PortalClose
-```
-
-Opens a selection window to close a specific window.
 
 
 <!-- ### Opening proxy portal -->
@@ -201,6 +181,15 @@ Opens a selection window to close a specific window.
 ```
 
 Lists all open portals.
+
+
+### Viewing Logs
+
+```
+:PortalLog [input_type] <output_type>
+```
+
+Opens a buffer containing the output of the converter process used by any portals in the current buffer matching the given arguments.
 
 
 

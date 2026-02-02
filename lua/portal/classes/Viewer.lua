@@ -23,7 +23,7 @@ function M:open()
     vim.schedule_wrap(function(obj)
       if obj.code ~= 0 then
         vim.notify(
-          string.format("Failed to open viewer, exited with code %s\n[stderr]: %s", obj.code, obj.stderr),
+          string.format("Failed to open viewer, exited with code %s\n[stderr]:\n%s", obj.code, obj.stderr),
           vim.log.levels.ERROR,
           { title = "portal.nvim" }
         )

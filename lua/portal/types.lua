@@ -9,6 +9,7 @@
 ---@field has_converted boolean
 ---@field augroup_id integer
 ---@field cfg portal.ConverterConfig
+---@field cmd portal.Cmd
 ---@field cmd_substitutions portal.CmdSubstitutions
 ---@field proc? vim.SystemObj
 ---@field viewers (portal.LocalViewer|portal.GlobalViewer)[]
@@ -41,6 +42,8 @@
 ---@field src string
 ---@field dest string
 ---@field cfg portal.ViewerConfig
+---@field open_cmd portal.Cmd
+---@field refresh_cmd portal.Cmd?
 ---@field cmd_substitutions portal.CmdSubstitutions
 ---@field converter? portal.Converter
 ---@field proc? vim.SystemObj
@@ -56,29 +59,32 @@
 ---@class portal.GlobalViewer: portal.LocalViewer
 ---@field is_target_outdated boolean
 ---@field augroup_id integer
+---@field switch_cmd portal.Cmd
 ---@field switch function(): nil
 
 --==============================================================================
 -- CONFIG
 --==============================================================================
 
----@alias portal.CmdSubstitutions { [string]: string|fun(): string }
----@alias portal.Cmd string[]|fun(): string[]
+---@alias portal.CmdSubstitutions { [string]: (string|fun(): string) }
+---@alias portal.CmdArg string|fun(): string
+---@alias portal.CmdConfig portal.CmdArg[]|fun(): portal.CmdArg[]
+---@alias portal.Cmd portal.CmdArg[]
 
 ---@alias portal.ConverterSuccessConditions { stdout_contains: string?, stderr_contains: string?, exit_code: integer? }
 ---@alias portal.ConverterFailureConditions { stdout_contains: string?, stderr_contains: string? }
 
 ---@class portal.ConverterConfig
----@field cmd portal.Cmd
+---@field cmd portal.CmdConfig
 ---@field stdin boolean
 ---@field daemon boolean
 ---@field success_condition? portal.ConverterSuccessConditions
 ---@field failure_condition? portal.ConverterFailureConditions
 
 ---@class portal.ViewerConfig
----@field open_cmd portal.Cmd
----@field switch_cmd portal.Cmd
----@field refresh_cmd? portal.Cmd
+---@field open_cmd portal.CmdConfig
+---@field switch_cmd portal.CmdConfig
+---@field refresh_cmd? portal.CmdConfig
 ---@field detach boolean
 
 ---@class portal.PortalConfig

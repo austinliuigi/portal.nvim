@@ -12,6 +12,7 @@ M.__index = M
 ---@param bufnr integer
 ---@return portal.OneShotConverter?
 function M:construct(src, dest, bufnr)
+  local cfg = require("portal.config").get_portal_config(src, dest).converter
   local instance = setmetatable({
     src = src,
     dest = dest,
@@ -21,8 +22,11 @@ function M:construct(src, dest, bufnr)
     queued = false,
     viewers = {},
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-converter-%s-%s-%s", src, dest, bufnr), {}),
-    cfg = require("portal.config").get_portal_config(src, dest).converter,
+    cfg = cfg,
     status = "idle",
+
+    ---@diagnostic disable-next-line: need-check-nil
+    cmd = require("portal.utils").eval_if_func(cfg.cmd),
   }, M)
 
   -- reconvert when source content changes
@@ -41,13 +45,34 @@ function M:construct(src, dest, bufnr)
   return instance
 end
 
+--- Convert an unnested list to a string
+--
+---@param list any[]
+local function list_to_str(list)
+  local str_tbl = {}
+  for _, item in ipairs(list) do
+    table.insert(str_tbl, tostring(item))
+  end
+  return table.concat(str_tbl, ",")
+end
+
 --- Perform conversion to generate corresponding output file from current input file
 --
 function M:convert()
   self.status = "converting"
   self.busy = true
 
-  local cache_outfile = require("portal.cache").get_cache_outfile(self.src, self.dest, self.bufnr)
+  -- NOTE: We hash the cmd of the converter because some input types can contain contents corresponding to
+  --       multiple outputs of the same dest in a single file, e.g. a manim file can have multiple scenes
+  --       in a file, which can all be of type gif.
+  --       Thus, to avoid false cache hits when changing outputs (e.g. scenes) but keeping the buffer content unchanged,
+  --       we use the cmd of the converter to distinguish them, as that is what determines the chosen output.
+  -- NOTE: This only works when the cmd doesn't contain any functions, as converting a function to a string
+  --       is not deterministic since it uses its memory address in the current neovim instance. A cmd containing
+  --       any functions, it will most likely cache miss and generate an identical entry when run from a different
+  --       neovim instance.
+  local cache_outfile =
+    require("portal.cache").get_cache_outfile(self.src, self.dest, self.bufnr, list_to_str(self.cmd))
 
   -- handle cache hit ---------------------------
   if vim.uv.fs_stat(cache_outfile) then
@@ -70,7 +95,7 @@ function M:convert()
   -- handle cache miss ---------------------------
   else
     self.proc = vim.system(
-      require("portal.cmd").interpolate(self.cfg.cmd, self.cmd_substitutions),
+      require("portal.cmd").interpolate(self.cmd, self.cmd_substitutions),
       {
         text = true,
         detach = false,

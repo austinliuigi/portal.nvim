@@ -12,6 +12,7 @@ M.__index = M
 ---@param bufnr integer
 ---@return portal.DaemonConverter
 function M:construct(src, dest, bufnr)
+  local cfg = require("portal.config").get_portal_config(src, dest).converter
   local instance = setmetatable({
     src = src,
     dest = dest,
@@ -19,8 +20,11 @@ function M:construct(src, dest, bufnr)
     has_converted = false,
     viewers = {},
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-converter-%s-%s-%s", src, dest, bufnr), {}),
-    cfg = require("portal.config").get_portal_config(src, dest).converter,
+    cfg = cfg,
     status = "idle",
+
+    ---@diagnostic disable-next-line: need-check-nil
+    cmd = require("portal.utils").eval_if_func(cfg.cmd),
   }, M)
 
   return instance
@@ -30,7 +34,7 @@ end
 --
 function M:convert()
   self.status = "converting"
-  self.proc = vim.system(require("portal.cmd").interpolate(self.cfg.cmd, self.cmd_substitutions), {
+  self.proc = vim.system(require("portal.cmd").interpolate(self.cmd, self.cmd_substitutions), {
     text = true,
     detach = false,
     ---@diagnostic disable-next-line: assign-type-mismatch

@@ -47,6 +47,10 @@ M.default_viewer_config = {
 
 --- Default user configuration
 --
+local function get_manim_scene()
+  return vim.fn.input("Scene: ")
+end
+
 M.default_config = {
   --=========================================================================
   -- general
@@ -145,7 +149,9 @@ M.default_config = {
       -- manim to png -----------------------------------------------------------------
       png = {
         converter = {
-          cmd = { "manim", "--format=png", "$INFILE", "-o", "$OUTFILE" },
+          cmd = function()
+            return { "manim", "--format=png", "-o", "$OUTFILE", "$INFILE", get_manim_scene() }
+          end,
           stdin = false,
           daemon = false,
         },
@@ -154,7 +160,9 @@ M.default_config = {
       -- manim to gif -----------------------------------------------------------------
       gif = {
         converter = {
-          cmd = { "manim", "-ql", "--format=gif", "$INFILE", "-o", "$OUTFILE" },
+          cmd = function()
+            return { "manim", "-ql", "--format=gif", "-o", "$OUTFILE", "$INFILE", get_manim_scene() }
+          end,
           stdin = false,
           daemon = false,
         },
@@ -163,7 +171,9 @@ M.default_config = {
       -- manim to mp4 -----------------------------------------------------------------
       mp4 = {
         converter = {
-          cmd = { "manim", "-ql", "--format=mp4", "$INFILE", "-o", "$OUTFILE" },
+          cmd = function()
+            return { "manim", "-ql", "--format=mp4", "-o", "$OUTFILE", "$INFILE", get_manim_scene() }
+          end,
           stdin = false,
           daemon = false,
         },

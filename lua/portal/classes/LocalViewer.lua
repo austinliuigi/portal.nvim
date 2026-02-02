@@ -21,12 +21,15 @@ function M:construct(src, dest, bufnr)
     return instance
   end
 
+  local cfg = require("portal.config").get_portal_config(src, dest).viewer
   instance = setmetatable({
     src = src,
     dest = dest,
     bufnr = bufnr,
     converter = require("portal.classes.Converter"):construct(src, dest, bufnr),
-    cfg = require("portal.config").get_portal_config(src, dest).viewer,
+    cfg = cfg,
+    open_cmd = require("portal.utils").eval_if_func(cfg.open_cmd),
+    refresh_cmd = require("portal.utils").eval_if_func(cfg.refresh_cmd),
   }, M)
 
   instance.cmd_substitutions = {

@@ -15,7 +15,7 @@ function M:open()
     return
   end
 
-  local interpolated_cmd = require("portal.cmd").interpolate(self.cfg.open_cmd, self.cmd_substitutions)
+  local interpolated_cmd = require("portal.cmd").interpolate(self.open_cmd, self.cmd_substitutions)
 
   self.proc = vim.system(
     interpolated_cmd,
@@ -38,18 +38,18 @@ end
 --- Ensure updated content is shown in viewer
 --
 function M:update()
-  -- switch target
+  -- switch target (for global viewers)
   if self.is_target_outdated then
     vim.system(
-      require("portal.cmd").interpolate(self.cfg.switch_cmd, self.cmd_substitutions),
+      require("portal.cmd").interpolate(self.switch_cmd, self.cmd_substitutions),
       { text = true, detach = true },
       vim.schedule_wrap(function(obj) end)
     )
     self.is_target_outdated = false
   -- refresh target
-  elseif self.cfg.refresh_cmd then
+  elseif self.refresh_cmd then
     vim.system(
-      require("portal.cmd").interpolate(self.cfg.refresh_cmd, self.cmd_substitutions),
+      require("portal.cmd").interpolate(self.refresh_cmd, self.cmd_substitutions),
       { text = true, detach = true },
       vim.schedule_wrap(function(obj) end)
     )

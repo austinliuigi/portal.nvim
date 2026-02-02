@@ -18,6 +18,7 @@ M.interpolate = function(cmd, substitutions)
 
   local interpolated_cmd = {}
   for _, arg in ipairs(require("portal.utils").eval_if_func(cmd)) do
+    arg = require("portal.utils").eval_if_func(arg)
     local interpolated_arg = arg:gsub("$%u+", normalized_substitutions)
     table.insert(interpolated_cmd, interpolated_arg)
   end

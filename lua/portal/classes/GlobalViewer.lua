@@ -20,12 +20,16 @@ function M:construct(src, dest)
     return instance
   end
 
+  local cfg = require("portal.config").get_portal_config(src, dest).viewer
   instance = setmetatable({
     src = src,
     dest = dest,
     is_target_outdated = false,
     augroup_id = vim.api.nvim_create_augroup(string.format("portal-globalviewer-%s-%s", src, dest), {}),
-    cfg = require("portal.config").get_portal_config(src, dest).viewer,
+    cfg = cfg,
+    open_cmd = require("portal.utils").eval_if_func(cfg.open_cmd),
+    switch_cmd = require("portal.utils").eval_if_func(cfg.switch_cmd),
+    refresh_cmd = require("portal.utils").eval_if_func(cfg.refresh_cmd),
   }, M)
 
   instance.cmd_substitutions = {

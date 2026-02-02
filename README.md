@@ -285,20 +285,20 @@ require("portal").setup({
 
 ### Converters
 
-| Option               | Type                                | Description |
-|----------------------|-------------------------------------|-------------|
-| `cmd`                | `portal.Cmd`                        | Command used to generate output file. |
-| `stdin`              | `boolean`                           | True if `cmd` uses stdin as its input. |
-| `daemon`             | `boolean`                           | True if `cmd` creates a long-running daemon process which triggers a conversion on file changes. |
+| Option              | Type                                | Description |
+|---------------------|-------------------------------------|-------------|
+| `cmd`               | `portal.CmdConfig`                  | Command used to generate output file. If function, it is evaluated once when the converter is created to get the command table. If any arguments are functions, they will be evaluated on each invocation of `cmd`. |
+| `stdin`             | `boolean`                           | True if `cmd` uses stdin as its input. |
+| `daemon`            | `boolean`                           | True if `cmd` creates a long-running daemon process which triggers a conversion on file changes. |
 | `success_condition` | `portal.ConverterSuccessConditions` | Condition that indicates a conversion succeeded in generating an output. By default, an exit code of 0 indicates a success. Daemon converters should set either `stdout_contains` or `stderr_contains`. |
 | `failure_condition` | `portal.ConverterFailureConditions` | Condition that indicates a conversion failed in generating an output. If `success_condition` contains `exit_code`, then the inverse is used to indicate a failure. Otherwise, either `stdout_contains` or `stderr_contains` should be set. |
 
 
 ### Viewers
 
-| Option        | Type         | Description |
-|---------------|--------------|-------------|
-| `open_cmd`    | `portal.Cmd` | Command used to open viewer process. |
-| `refresh_cmd` | `portal.Cmd` | Command used to refresh file that is being viewed. |
-| `switch_cmd`  | `portal.Cmd` | Command used to switch file that is being viewed. |
-| `detach`      | `boolean`    | True if viewer should be "detached" from portal. Detached viewers need to be manually closed. |
+| Option        | Type               | Description |
+|---------------|--------------------|-------------|
+| `open_cmd`    | `portal.CmdConfig` | Command used to open viewer process. |
+| `refresh_cmd` | `portal.CmdConfig` | Command used to refresh file that is being viewed. |
+| `switch_cmd`  | `portal.CmdConfig` | Command used to switch file that is being viewed. |
+| `detach`      | `boolean`          | True if viewer should be "detached" from portal. Detached viewers need to be manually closed. |

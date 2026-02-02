@@ -1,4 +1,7 @@
-local M = {}
+local M = {
+  ---@type { [integer]:  portal.StatusWindow }
+  instances = {},
+}
 M.__index = M
 
 --- Create a StatusWindow object
@@ -26,6 +29,8 @@ function M:destruct()
     vim.api.nvim_buf_clear_namespace(self.bufnr, self.namespace_id, 0, -1)
     vim.api.nvim_buf_delete(self.bufnr, { force = true })
   end
+
+  M.instances[self.winid] = nil
 end
 
 --- Open or reposition the status window
@@ -51,6 +56,8 @@ function M:show()
       style = "minimal",
     })
     vim.wo[self.winid].winblend = 100
+
+    M.instances[self.winid] = self
   else
     -- reposition status window
     vim.api.nvim_win_set_config(self.winid, {

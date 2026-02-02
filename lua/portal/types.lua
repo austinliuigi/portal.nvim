@@ -21,6 +21,7 @@
 ---@field detach_viewer function(): nil
 ---@field update_viewers function(): nil
 ---@field status portal.Status
+---@field log_buf integer
 
 ---@class portal.OneShotConverter: portal.Converter
 ---@field busy boolean

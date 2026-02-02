@@ -126,4 +126,31 @@ function M.disable()
   end
 end
 
+--- Open converter log on click
+--
+vim.keymap.set("n", "<LeftMouse>", function()
+  local mousepos = vim.fn.getmousepos()
+
+  local clicked_status_win = require("portal.status.classes.StatusWindow").instances[mousepos.winid]
+  if clicked_status_win == nil then
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<LeftMouse>", true, true, true), "n", false)
+    return
+  end
+
+  local clicked_line_str = require("portal.status.lines").get_raw_lines(clicked_status_win.lines)[mousepos.line]
+  local src = clicked_line_str:match("(%w+) %-%->")
+  local dest = clicked_line_str:match("%-%-> (%w+)")
+  local bufnr = vim.api.nvim_win_get_buf(clicked_status_win.parent_winid)
+  local converter = require("portal.classes.Converter").instances[bufnr][src][dest]
+
+  vim.api.nvim_win_call(clicked_status_win.parent_winid, function()
+    local log_win = vim.api.nvim_open_win(converter.log_buf, false, {
+      split = "below",
+    })
+    vim.api.nvim_win_call(log_win, function()
+      vim.cmd("normal! G")
+    end)
+  end)
+end, {})
+
 return M

@@ -143,14 +143,14 @@ vim.keymap.set("n", "<LeftMouse>", function()
   local bufnr = vim.api.nvim_win_get_buf(clicked_status_win.parent_winid)
   local converter = require("portal.classes.Converter").instances[bufnr][src][dest]
 
+  local log_win
   vim.api.nvim_win_call(clicked_status_win.parent_winid, function()
-    local log_win = vim.api.nvim_open_win(converter.log_buf, false, {
+    log_win = vim.api.nvim_open_win(converter.log_buf, true, {
       split = "below",
     })
-    vim.api.nvim_win_call(log_win, function()
-      vim.cmd("normal! G")
-    end)
   end)
+  vim.api.nvim_set_current_win(log_win)
+  vim.cmd("normal! G")
 end, {})
 
 return M

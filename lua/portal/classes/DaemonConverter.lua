@@ -43,8 +43,7 @@ function M:convert()
     stdout = vim.schedule_wrap(function(_, stdout_str)
       if stdout_str then
         -- log output
-        local lines = vim.split(stdout_str, "\n", { plain = true })
-        require("portal.utils").append_and_scroll(self.log_buf, lines)
+        require("portal.utils").append_and_scroll(self.log_buf, stdout_str)
 
         -- handle failure/success conditions
         if
@@ -63,8 +62,7 @@ function M:convert()
     stderr = vim.schedule_wrap(function(_, stderr_str)
       if stderr_str then
         -- log output
-        local lines = vim.split(stderr_str, "\n", { plain = true })
-        require("portal.utils").append_and_scroll(self.log_buf, lines)
+        require("portal.utils").append_and_scroll(self.log_buf, stderr_str)
 
         -- handle failure/success conditions
         if

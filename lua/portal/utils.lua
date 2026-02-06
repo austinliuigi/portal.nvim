@@ -130,13 +130,17 @@ end
 --- Append lines to a buffer and scroll to the bottom
 --
 ---@param bufnr integer
----@param lines string[]
-function M.append_and_scroll(bufnr, lines)
-  vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, lines)
+---@param line_str string
+function M.append_and_scroll(bufnr, line_str)
+  local current_last_line = vim.api.nvim_buf_get_lines(bufnr, -2, -1, false)[1]
+  line_str = current_last_line .. line_str
+
+  local lines = vim.split(line_str, "\n")
+  vim.api.nvim_buf_set_lines(bufnr, -2, -1, false, lines)
+
   local winid = vim.fn.bufwinid(bufnr)
   if winid ~= -1 then
     local winid_screen_lines = vim.api.nvim_win_get_height(winid)
-
     vim.api.nvim_win_call(winid, function()
       vim.cmd(string.format("normal! G%dkzzG", winid_screen_lines / 3))
     end)

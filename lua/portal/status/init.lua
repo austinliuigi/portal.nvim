@@ -128,7 +128,7 @@ end
 
 --- Open converter log on click
 --
-vim.keymap.set("n", "<LeftMouse>", function()
+vim.keymap.set({ "n", "i" }, "<LeftMouse>", function()
   local mousepos = vim.fn.getmousepos()
 
   local clicked_status_win = require("portal.status.classes.StatusWindow").instances[mousepos.winid]
@@ -145,7 +145,7 @@ vim.keymap.set("n", "<LeftMouse>", function()
 
   local log_win
   vim.api.nvim_win_call(clicked_status_win.parent_winid, function()
-    log_win = vim.api.nvim_open_win(converter.log_buf, true, {
+    log_win = vim.api.nvim_open_win(converter.log_buf.bufnr, true, {
       split = "below",
     })
   end)

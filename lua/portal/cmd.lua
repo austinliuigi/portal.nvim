@@ -25,4 +25,16 @@ M.interpolate = function(cmd, substitutions)
   return interpolated_cmd
 end
 
+--- Wrap a command using `script`, so that ansi colors are sent by the command
+--
+---@param cmd portal.Cmd
+---@return portal.Cmd
+---@return boolean
+M.wrap = function(cmd)
+  if vim.fn.executable("script") == 0 then
+    return cmd, false
+  end
+  return { "script", "-qec", table.concat(cmd, " "), "/dev/null" }, true
+end
+
 return M

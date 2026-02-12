@@ -126,7 +126,7 @@ vim.api.nvim_create_user_command("PortalLog", function(opts)
   end
 
   vim.cmd("botright split")
-  vim.api.nvim_win_set_buf(0, converter.log_buf)
+  vim.api.nvim_win_set_buf(0, converter.log_buf.bufnr)
 end, {
   nargs = "*",
   complete = function(arglead, cmdline, cursorpos)

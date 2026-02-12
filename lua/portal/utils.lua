@@ -127,24 +127,26 @@ function M.tbl_prune(tbl, depth)
   end
 end
 
---- Append lines to a buffer and scroll to the bottom
+--- Create a log buffer
 --
----@param bufnr integer
----@param line_str string
-function M.append_and_scroll(bufnr, line_str)
-  local current_last_line = vim.api.nvim_buf_get_lines(bufnr, -2, -1, false)[1]
-  line_str = current_last_line .. line_str
+function M.create_log_buf()
+  local bufnr = vim.api.nvim_create_buf(false, true)
 
-  local lines = vim.split(line_str, "\n")
-  vim.api.nvim_buf_set_lines(bufnr, -2, -1, false, lines)
+  local ei = vim.o.eventignore
+  vim.o.eventignore = "all"
+  local chan = vim.api.nvim_open_term(bufnr, {})
+  vim.o.eventignore = ei
 
-  local winid = vim.fn.bufwinid(bufnr)
-  if winid ~= -1 then
-    local winid_screen_lines = vim.api.nvim_win_get_height(winid)
-    vim.api.nvim_win_call(winid, function()
-      vim.cmd(string.format("normal! G%dkzzG", winid_screen_lines / 3))
-    end)
-  end
+  vim.api.nvim_create_autocmd("BufEnter", {
+    callback = vim.schedule_wrap(function()
+      if vim.api.nvim_get_mode().mode == "t" then
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-n>", true, true, true), "n", false)
+      end
+    end),
+    buffer = bufnr,
+  })
+
+  return { bufnr = bufnr, chan = chan }
 end
 
 return M

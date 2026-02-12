@@ -2,6 +2,8 @@
 -- CONVERTERS
 --==============================================================================
 
+---@alias portal.LogBuffer { bufnr: integer, chan: integer }
+
 ---@class portal.Converter
 ---@field src string
 ---@field dest string
@@ -21,7 +23,7 @@
 ---@field detach_viewer function(): nil
 ---@field update_viewers function(): nil
 ---@field status portal.Status
----@field log_buf integer
+---@field log_buf portal.LogBuffer
 
 ---@class portal.OneShotConverter: portal.Converter
 ---@field busy boolean

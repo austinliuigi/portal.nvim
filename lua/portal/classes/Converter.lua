@@ -30,6 +30,7 @@ function M:construct(src, dest, bufnr)
     ["$TEMPDIR"] = require("portal").tempdir,
     ["$INFILE"] = vim.api.nvim_buf_get_name(bufnr),
     ["$OUTFILE"] = require("portal").get_outfile(src, dest, bufnr),
+    ["$ID"] = string.format("portal-%s-%s-%s", vim.fn.getpid(), src, dest),
   }
 
   -- perform initial conversion

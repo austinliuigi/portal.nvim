@@ -62,8 +62,13 @@ M.default_config = {
   --=========================================================================
   viewers = {
     sioyek = {
-      open_cmd = { "sioyek", "--instance-name", "$ID", "$OUTFILE" },
-      switch_cmd = { "sioyek", "--instance-name", "$ID", "$OUTFILE" },
+      open_cmd = { "sioyek", "--instance-name", "sioyek-$ID", "$OUTFILE" },
+      switch_cmd = { "sioyek", "--instance-name", "sioyek-$ID", "$OUTFILE" },
+      detach = false,
+    },
+    imv = {
+      open_cmd = { "imv", "$OUTFILE" },
+      switch_cmd = { "imv-msg", "$PID", "open", "$OUTFILE" },
       detach = false,
     },
     mpv = {
@@ -142,6 +147,46 @@ M.default_config = {
       },
     },
     ---------------------------------------------------------------------------
+    -- latex
+    ---------------------------------------------------------------------------
+    tex = {
+      -- tex to pdf -----------------------------------------------------------------
+      pdf = {
+        converter = {
+          cmd = {
+            "bash",
+            "-c",
+            "pdflatex --output-directory $TEMPDIR -jobname $ID $INFILE && cp $TEMPDIR/$ID.pdf $OUTFILE",
+          },
+          stdin = false,
+          daemon = false,
+        },
+        viewer = "sioyek",
+      },
+    },
+    ---------------------------------------------------------------------------
+    -- plantuml
+    ---------------------------------------------------------------------------
+    uml = {
+      -- uml to png -----------------------------------------------------------------
+      png = {
+        converter = {
+          cmd = { "bash", "-c", "cat $INFILE | plantuml --pipe | sponge $OUTFILE" },
+          stdin = false,
+          daemon = false,
+        },
+        viewer = "imv",
+      },
+      svg = {
+        converter = {
+          cmd = { "bash", "-c", "cat $INFILE | plantuml --pipe --svg | sponge $OUTFILE" },
+          stdin = false,
+          daemon = false,
+        },
+        viewer = "imv",
+      },
+    },
+    ---------------------------------------------------------------------------
     -- manim
     -- TODO: run in temp directory?
     ---------------------------------------------------------------------------
@@ -150,7 +195,7 @@ M.default_config = {
       png = {
         converter = {
           cmd = function()
-            return { "manim", "--format=png", "-o", "$OUTFILE", "$INFILE", get_manim_scene() }
+            return { "manim", "-ql", "-s", "-o", "$OUTFILE", "$INFILE", get_manim_scene() }
           end,
           stdin = false,
           daemon = false,

@@ -27,14 +27,22 @@ end
 
 --- Wrap a command using `script`, so that ansi colors are sent by the command
 --
----@param cmd portal.Cmd
----@return portal.Cmd
+---@param cmd string[]
+---@return string[]
 ---@return boolean
 M.wrap = function(cmd)
   if vim.fn.executable("script") == 0 then
     return cmd, false
   end
-  return { "script", "-qec", table.concat(cmd, " "), "/dev/null" }, true
+
+  -- wrap each arg in quotes so they are properly separated after being wrapped by script
+  -- e.g. { "bash", "-c", "cat file.txt" } -> { "'bash'", "'-c'", "'cat file.txt'" }
+  --    script -qec "bash -c cat file.txt" -> script -qec "bash -c 'cat file.txt'"
+  local cmd_quoted = vim.deepcopy(cmd)
+  for i, arg in ipairs(cmd_quoted) do
+    cmd_quoted[i] = '"' .. arg .. '"'
+  end
+  return { "script", "-qec", table.concat(cmd_quoted, " "), "/dev/null" }, true
 end
 
 return M
